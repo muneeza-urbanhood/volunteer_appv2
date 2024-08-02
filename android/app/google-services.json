@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "474877316901",
+    "firebase_url": "https://helloworld-155e1-default-rtdb.firebaseio.com",
+    "project_id": "helloworld-155e1",
+    "storage_bucket": "helloworld-155e1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474877316901:android:004947ca8db14ad8b254cc",
+        "android_client_info": {
+          "package_name": "com.example.volunteer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALQSTRYJZF7Is7dTklNdT9ALYeijE-SJo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

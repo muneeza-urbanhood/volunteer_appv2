@@ -1,0 +1,9 @@
+
+{
+  "rules": {
+    "tasks": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.isAdmin == true"
+    }
+  }
+}
