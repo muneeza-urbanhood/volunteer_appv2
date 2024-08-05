@@ -126,6 +126,7 @@ class _AdminScreenState extends State<AdminScreen> {
               controller: _descriptionController,
               decoration: InputDecoration(labelText: 'Description'),
             ),
+            // Dropdown for selecting assigned volunteer
             DropdownButtonFormField<String>(
               value: _selectedVolunteerEmail,
               decoration: InputDecoration(labelText: 'Assigned Volunteer'),

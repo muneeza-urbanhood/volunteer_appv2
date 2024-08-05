@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 
 class VolunteerSignUpScreen extends StatefulWidget {
   @override
@@ -10,54 +10,36 @@ class VolunteerSignUpScreen extends StatefulWidget {
 class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  final _nameController = TextEditingController();  // Add name field
+  final _nameController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   final _database = FirebaseDatabase.instance.ref();
-  final _formKey = GlobalKey<FormState>();
+  bool _isSignedUp = false; // Track if the sign-up is successful
 
-  Future<void> _signUp() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      try {
-        if (_passwordController.text == _confirmPasswordController.text) {
-          UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-            email: _emailController.text,
-            password: _passwordController.text,
-          );
+  void _signUp() async {
+    final email = _emailController.text;
+    final password = _passwordController.text;
+    final name = _nameController.text;
 
-          // Save user information to Firebase Realtime Database
-          await _database.child('volunteers').child(userCredential.user!.uid).set({
-            'email': _emailController.text,
-            'name': _nameController.text,
-            'tasks': [], // Initialize with an empty list of tasks
-          });
+    try {
+      // Create a new user in Firebase Authentication
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-          Navigator.pushReplacementNamed(context, '/volunteerDashboard');
-        } else {
-          _showErrorDialog('Passwords do not match');
-        }
-      } catch (e) {
-        _showErrorDialog(e.toString());
-      }
+      // Save user information to Firebase Realtime Database
+      await _database.child('volunteers').child(userCredential.user!.uid).set({
+        'email': email,
+        'name': name,
+      });
+
+      // Update the state to show the confirmation message
+      setState(() {
+        _isSignedUp = true;
+      });
+    } catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign Up Failed: $error')));
     }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('An error occurred'),
-        content: Text(message),
-        actions: <Widget>[
-          TextButton(
-            child: Text('Okay'),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-            },
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -68,60 +50,53 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: <Widget>[
-              TextFormField(
+        child: Column(
+          children: <Widget>[
+            if (!_isSignedUp) ...[
+              TextField(
                 controller: _nameController,
                 decoration: InputDecoration(labelText: 'Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
               ),
-              TextFormField(
+              TextField(
                 controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(labelText: 'Email'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
-                  }
-                  return null;
-                },
+                keyboardType: TextInputType.emailAddress,
               ),
-              TextFormField(
+              TextField(
                 controller: _passwordController,
+                decoration: InputDecoration(labelText: 'Create Password'),
                 obscureText: true,
-                decoration: InputDecoration(labelText: 'Password'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: true,
-                decoration: InputDecoration(labelText: 'Confirm Password'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please confirm your password';
-                  }
-                  return null;
-                },
               ),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _signUp,
                 child: Text('Sign Up'),
               ),
+            ] else ...[
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      'You are signed up!',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          '/home',
+                              (Route<dynamic> route) => false,
+                        );
+                      },
+                      child: Text('Back to Home Screen'),
+                    ),
+                  ],
+                ),
+              ),
             ],
-          ),
+          ],
         ),
       ),
     );

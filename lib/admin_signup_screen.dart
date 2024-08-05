@@ -13,6 +13,7 @@ class _AdminSignUpScreenState extends State<AdminSignUpScreen> {
   final _nameController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   final _database = FirebaseDatabase.instance.ref();
+  bool _isSignedUp = false; // Track if the sign-up is successful
 
   void _signUp() async {
     final email = _emailController.text;
@@ -32,9 +33,10 @@ class _AdminSignUpScreenState extends State<AdminSignUpScreen> {
         'name': name,
       });
 
-      // Navigate back to the login screen or show a success message
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign Up Successful')));
+      // Update the state to show the confirmation message
+      setState(() {
+        _isSignedUp = true;
+      });
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Sign Up Failed: $error')));
     }
@@ -48,7 +50,30 @@ class _AdminSignUpScreenState extends State<AdminSignUpScreen> {
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
+        child: _isSignedUp
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(
+                'You are signed up!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                        (Route<dynamic> route) => false,
+                  );
+                },
+                child: Text('Back to Home Screen'),
+              ),
+            ],
+          ),
+        )
+            : Column(
           children: <Widget>[
             TextField(
               controller: _nameController,
@@ -61,7 +86,7 @@ class _AdminSignUpScreenState extends State<AdminSignUpScreen> {
             ),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              decoration: InputDecoration(labelText: 'Create Password'),
               obscureText: true,
             ),
             SizedBox(height: 20),
