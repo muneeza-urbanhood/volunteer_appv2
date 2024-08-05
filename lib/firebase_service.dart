@@ -1,32 +1,9 @@
 import 'package:firebase_database/firebase_database.dart';
-
-class Task {
-  String title;
-  String description;
-  String assignedVolunteer;
-  String dueDate;
-  String status;
-
-  Task(this.title, this.description, this.assignedVolunteer, this.dueDate, this.status);
-
-  Task.fromJson(Map<String, dynamic> json)
-      : title = json['title'],
-        description = json['description'],
-        assignedVolunteer = json['assignedVolunteer'],
-        dueDate = json['dueDate'],
-        status = json['status'];
-
-  Map<String, dynamic> toJson() => {
-    'title': title,
-    'description': description,
-    'assignedVolunteer': assignedVolunteer,
-    'dueDate': dueDate,
-    'status': status,
-  };
-}
+import 'datamodel.dart';
 
 class FirebaseService {
   final DatabaseReference _tasksRef = FirebaseDatabase.instance.ref().child('tasks');
+  final DatabaseReference _volunteersRef = FirebaseDatabase.instance.ref().child('Volunteers');
 
   Future<void> addTask(Task task) async {
     String? taskId = _tasksRef.push().key;
@@ -35,7 +12,31 @@ class FirebaseService {
     }
   }
 
-  Stream<DatabaseEvent> getTasksStream() {
-    return _tasksRef.onValue;
+  Stream<DatabaseEvent> getTasksStreamForVolunteer(String volunteerEmail) {
+    Query volunteerTasksQuery = _tasksRef.orderByChild('assignedVolunteer').equalTo(volunteerEmail);
+    return volunteerTasksQuery.onValue;
+  }
+
+  Future<List<Map<String, String>>> getVolunteers() async {
+    try {
+      final snapshot = await _volunteersRef.once();
+      print("Snapshot value: ${snapshot.snapshot.value}"); // Debug log
+      if (snapshot.snapshot.value != null) {
+        Map<dynamic, dynamic> volunteersData = Map<dynamic, dynamic>.from(snapshot.snapshot.value as Map);
+        List<Map<String, String>> volunteersList = volunteersData.entries.map((entry) {
+          return {
+            'name': entry.key as String,
+            'email': entry.value as String,
+          };
+        }).toList();
+        print("Volunteers fetched: $volunteersList"); // Debug log
+        return volunteersList;
+      } else {
+        return [];
+      }
+    } catch (e) {
+      print("Failed to fetch volunteers: $e");
+      return [];
+    }
   }
 }
