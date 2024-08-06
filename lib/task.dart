@@ -1,22 +1,19 @@
 class Task {
-  final String title;
-  final String description;
-  final DateTime dueDate;
-  final String status;
+  String title;
+  String description;
+  String assignedVolunteer;
+  String dueDate;
+  String status;
 
-  Task({
-    required this.title,
-    required this.description,
-    required this.dueDate,
-    required this.status,
-  });
+  Task(this.title, this.description, this.assignedVolunteer, this.dueDate, this.status);
 
-  factory Task.fromJson(Map<String, dynamic> json) {
-    return Task(
-      title: json['title'] as String,
-      description: json['description'] as String,
-      dueDate: DateTime.parse(json['dueDate'] as String),
-      status: json['status'] as String,
-    );
+  Map<String, String> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'Assigned Volunteer': assignedVolunteer,
+      'dueDate': dueDate,
+      'status': status,
+    };
   }
 }
