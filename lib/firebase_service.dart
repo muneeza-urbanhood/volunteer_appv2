@@ -16,31 +16,30 @@ class FirebaseService {
     }
   }
 
-  Stream<DatabaseEvent> getTasksStreamForVolunteer(String volunteerID) {
-    Query volunteerTasksQuery = _tasksRef.orderByChild('assignedVolunteer')
-        .equalTo(volunteerID);
+  Stream<DatabaseEvent> getTasksStreamForVolunteer(String volunteerName) {
+    Query volunteerTasksQuery = _tasksRef.orderByChild('assignedVolunteer').equalTo(volunteerName);
     return volunteerTasksQuery.onValue;
   }
 
   Future<List<Map<String, String>>> getVolunteers() async {
     try {
-      final snapshot = await _volunteersRef.once();
-      print("Snapshot value: ${snapshot.snapshot.value}"); // Debug log
-
-      if (snapshot.snapshot.value != null) {
+      final snapshot = await _volunteersRef
+          .get(); // Use get() instead of once()
+      if (snapshot.value != null) {
         Map<dynamic, dynamic> volunteersData = Map<dynamic, dynamic>.from(
-            snapshot.snapshot.value as Map);
-        List<Map<String, String>> volunteersList = volunteersData.values.map((
-            volunteer) {
+            snapshot.value as Map);
+        List<Map<String, String>> volunteersList = volunteersData.entries.map((
+            entry) {
+          Map<dynamic, dynamic> value = entry.value;
           return {
-            'email': volunteer['email'] as String,
-            'name': volunteer['name'] as String,
+            'name': value['name'] as String,
+            'email': value['email'] as String,
           };
         }).toList();
-
         print("Volunteers fetched: $volunteersList"); // Debug log
         return volunteersList;
       } else {
+        print("No volunteers found.");
         return [];
       }
     } catch (e) {

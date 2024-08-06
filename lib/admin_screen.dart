@@ -43,7 +43,7 @@ class _AdminScreenState extends State<AdminScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _dueDateController = TextEditingController();
   String _status = 'New'; // Default value
-  String? _selectedVolunteerEmail;
+  String? _selectedVolunteerName;
 
   final FirebaseService _firebaseService = FirebaseService();
   List<Map<String, String>> _volunteers = []; // List of volunteer names and emails
@@ -61,7 +61,7 @@ class _AdminScreenState extends State<AdminScreen> {
       setState(() {
         _volunteers = volunteers;
         if (_volunteers.isNotEmpty) {
-          _selectedVolunteerEmail = _volunteers[0]['email']; // Default selection by email
+          _selectedVolunteerName = _volunteers[0]['name']; // Default selection by name
         }
       });
     } catch (e) {
@@ -70,7 +70,6 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 
   Future<void> _selectDueDate(BuildContext context) async {
-    DateTime currentDate = DateTime.now();
     DateTime initialDate = DateTime.now();
 
     // Show date picker
@@ -81,7 +80,7 @@ class _AdminScreenState extends State<AdminScreen> {
       lastDate: DateTime(2101),
     );
 
-    if (selectedDate != null && selectedDate != initialDate) {
+    if (selectedDate != null) {
       setState(() {
         _dueDateController.text = "${selectedDate.toLocal()}".split(' ')[0]; // Format date as YYYY-MM-DD
       });
@@ -91,11 +90,17 @@ class _AdminScreenState extends State<AdminScreen> {
   void _saveTask() async {
     String title = _titleController.text;
     String description = _descriptionController.text;
-    String assignedVolunteer = _selectedVolunteerEmail ?? '';
+    String assignedVolunteer = _selectedVolunteerName ?? '';
     String dueDate = _dueDateController.text;
     String status = _status;
 
-    Task task = Task(title, description, assignedVolunteer, dueDate, status);
+    Task task = Task(
+      title,
+      description,
+      assignedVolunteer, // Now storing the name instead of the email
+      dueDate,
+      status,
+    );
 
     try {
       await _firebaseService.addTask(task);
@@ -128,17 +133,17 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             // Dropdown for selecting assigned volunteer
             DropdownButtonFormField<String>(
-              value: _selectedVolunteerEmail,
+              value: _selectedVolunteerName,
               decoration: InputDecoration(labelText: 'Assigned Volunteer'),
               items: _volunteers.map((volunteer) {
                 return DropdownMenuItem<String>(
-                  value: volunteer['email'],
+                  value: volunteer['name'],
                   child: Text(volunteer['name']!),
                 );
               }).toList(),
               onChanged: (String? newValue) {
                 setState(() {
-                  _selectedVolunteerEmail = newValue;
+                  _selectedVolunteerName = newValue;
                 });
               },
             ),
