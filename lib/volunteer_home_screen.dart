@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class VolunteerOptionsScreen extends StatelessWidget {
+class VolunteerHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -32,7 +32,7 @@ class AdminDashboardScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacementNamed(context, '/adminLogin');
+                  Navigator.pushReplacementNamed(context, '/admin');
                 },
                 child: Text('Log Out'),
               ),
