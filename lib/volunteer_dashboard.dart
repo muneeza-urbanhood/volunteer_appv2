@@ -24,44 +24,50 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
   void _loadTasks() {
     final user = _auth.currentUser;
     if (user != null) {
-      print("Current user display name: ${user.displayName}"); // Debugging line
+      print("Current user display name: ${user.displayName}");
 
       _database
           .ref()
           .child('tasks')
           .orderByChild('assignedTo')
-          .equalTo(user.displayName) // Filter by user display name
+          .equalTo(user.displayName)
           .onValue
           .listen((event) {
         final List<Task> tasks = [];
         final data = event.snapshot.value as Map?;
-        print("Data received from Firebase: $data"); // Debugging line
+        print("Data received from Firebase: $data");
 
         if (data != null) {
           data.forEach((key, value) {
-            print("Task data: $value"); // Debugging line
+            print("Task data: $value");
             tasks.add(Task.fromMap(value));
           });
         } else {
-          print("No data found for user ${user.displayName}"); // Debugging line
+          print("No data found for user ${user.displayName}");
         }
 
         setState(() {
           _tasks = _sortAndFilterTasks(tasks);
-          print("Loaded tasks after sorting and filtering: $_tasks"); // Debugging line
+          print("Loaded tasks after sorting and filtering: ${_tasks.length} tasks");
         });
       });
     } else {
-      print("No current user found."); // Debugging line
+      print("No current user found.");
     }
   }
 
   List<Task> _sortAndFilterTasks(List<Task> tasks) {
+    // Filter tasks based on the selected status
     List<Task> filteredTasks = tasks.where((task) {
-      if (_selectedFilter == 'All') return true;
-      return task.status == _selectedFilter;
+      bool isMatch = _selectedFilter == 'All' ||
+          task.status.trim().toLowerCase() == _selectedFilter.trim().toLowerCase();
+      print("Filtering task: ${task.title}, Status: ${task.status}, isMatch: $isMatch");
+      return isMatch;
     }).toList();
 
+    print("Filtered tasks: ${filteredTasks.length}");
+
+    // Sort the filtered tasks based on the selected sort option
     if (_selectedSort == 'Due Date') {
       filteredTasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
     } else if (_selectedSort == 'Status') {

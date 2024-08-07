@@ -57,14 +57,14 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/admin'); // Navigate to AdminScreen
+                Navigator.pushNamed(context, '/adminHome');
               },
               child: Text('Admin'),
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/volunteerOptions');
+                Navigator.pushNamed(context, '/volunteerHome');
               },
               child: Text('Volunteer'),
             ),
