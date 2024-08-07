@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "volunteer_tasks": {
+      "$userId": {
+        ".read": "auth != null && (auth.uid === $userId || auth.token.admin === true)",
+        ".write": "auth != null && auth.token.admin === true"
+      }
+    }
+  }
+}
