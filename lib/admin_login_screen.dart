@@ -99,7 +99,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Sign In'),
+        title: Text('Admin Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

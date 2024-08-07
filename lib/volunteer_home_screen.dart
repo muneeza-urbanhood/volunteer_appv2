@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'volunteer_login_screen.dart'; // Import the login screen
-import 'volunteer_signup_screen.dart'; // Import the sign-up screen
 
 class VolunteerOptionsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Volunteer Options'),
+        title: Text('Volunteer'),
       ),
       body: Center(
         child: Column(
@@ -25,6 +23,13 @@ class VolunteerOptionsScreen extends StatelessWidget {
                 Navigator.pushNamed(context, '/volunteerSignUp');
               },
               child: Text('Volunteer Sign Up'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/home');
+              },
+              child: Text('Home Screen'),
             ),
           ],
         ),

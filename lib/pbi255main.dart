@@ -2,13 +2,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'admin_dashboard.dart';
 import 'admin_login_screen.dart';
+import 'admin_home_screen.dart';
 import 'admin_signup_screen.dart';
 import 'add_task_screen.dart';
 import 'update_task_screen.dart';
 import 'volunteer_login_screen.dart';
-import 'volunteer_options_screen.dart';
+import 'volunteer_home_screen.dart';
 import 'volunteer_signup_screen.dart';
-import 'volunteer_screen.dart';
+import 'volunteer_dashboard.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -30,6 +31,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => HomeScreen(),
         '/volunteerLogin': (context) => VolunteerLoginScreen(),
         '/volunteerSignUp': (context) => VolunteerSignUpScreen(),
+        '/admin': (context) => AdminScreen(),
         '/adminLogin': (context) => AdminLoginScreen(),
         '/adminSignUp': (context) => AdminSignUpScreen(),
         '/adminDashboard': (context) => AdminDashboardScreen(),
@@ -55,7 +57,7 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/adminLogin');
+                Navigator.pushNamed(context, '/admin'); // Navigate to AdminScreen
               },
               child: Text('Admin'),
             ),

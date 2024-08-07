@@ -76,15 +76,6 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Volunteer Dashboard'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () async {
-              await _auth.signOut();
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -104,6 +95,16 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
                   isThreeLine: true,
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: () async {
+                await _auth.signOut();
+                Navigator.of(context).pushNamedAndRemoveUntil('/volunteerOptions', (route) => false);
+              },
+              child: Text('Sign Out'),
             ),
           ),
         ],
