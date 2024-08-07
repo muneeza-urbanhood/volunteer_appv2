@@ -97,21 +97,19 @@ class _AdminScreenState extends State<AdminScreen> {
     Task task = Task(
       title,
       description,
-      assignedVolunteer, // Now storing the name instead of the email
+      assignedVolunteer,
       dueDate,
       status,
     );
 
     try {
       await _firebaseService.addTask(task);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ConfirmationScreen()),
-      );
+      Navigator.pushNamedAndRemoveUntil(context, '/adminDashboard', (route) => false);
     } catch (e) {
       print("Failed to save task: $e");
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

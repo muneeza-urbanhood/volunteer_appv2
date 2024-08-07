@@ -1,315 +1,178 @@
-// import 'package:firebase_database/firebase_database.dart';
-// import 'package:flutter/material.dart';
-// import 'firebase_service.dart';
-//
-// class VolunteerScreen extends StatefulWidget {
-//   final String volunteerId;
-//
-//   VolunteerScreen({required this.volunteerId});
-//
-//   @override
-//   _VolunteerScreenState createState() => _VolunteerScreenState();
-// }
-//
-// class _VolunteerScreenState extends State<VolunteerScreen> {
-//   final FirebaseService _firebaseService = FirebaseService();
-//   late Stream<DatabaseEvent> _tasksStream;
-//   List<Task> _tasks = [];
-//   String _filter = 'All'; // Default filter
-//   String _sortBy = 'Due Date'; // Default sorting
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _tasksStream = _firebaseService.getTasksStreamForVolunteer(widget.volunteerId);
-//     _startListening();
-//   }
-//
-//   void _startListening() {
-//     _tasksStream.listen((event) {
-//       final data = event.snapshot.value;
-//       if (data != null) {
-//         Map<dynamic, dynamic> taskData = Map<dynamic, dynamic>.from(data as Map);
-//         List<Task> loadedTasks = [];
-//         taskData.forEach((key, value) {
-//           loadedTasks.add(Task.fromJson(Map<String, dynamic>.from(value)));
-//         });
-//         _applyFilterAndSort(loadedTasks);
-//       }
-//     });
-//   }
-//
-//   void _applyFilterAndSort(List<Task> tasks) {
-//     List<Task> filteredTasks;
-//     if (_filter == 'All') {
-//       filteredTasks = tasks;
-//     } else {
-//       filteredTasks = tasks.where((task) => task.status == _filter).toList();
-//     }
-//
-//     if (_sortBy == 'Due Date') {
-//       filteredTasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
-//     } else if (_sortBy == 'Status') {
-//       filteredTasks.sort((a, b) => a.status.compareTo(b.status));
-//     }
-//
-//     setState(() {
-//       _tasks = filteredTasks;
-//     });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('My Tasks'),
-//         actions: [
-//           IconButton(
-//             icon: Icon(Icons.filter_list),
-//             onPressed: _showFilterDialog,
-//           ),
-//           IconButton(
-//             icon: Icon(Icons.sort),
-//             onPressed: _showSortDialog,
-//           ),
-//         ],
-//       ),
-//       body: _tasks.isEmpty
-//           ? Center(child: Text('No tasks available.'))
-//           : ListView.builder(
-//         itemCount: _tasks.length,
-//         itemBuilder: (context, index) {
-//           final task = _tasks[index];
-//           return ListTile(
-//             title: Text(task.title),
-//             subtitle: Text(
-//               '${task.description}\nDue Date: ${task.dueDate}\nStatus: ${task.status}',
-//               style: TextStyle(fontSize: 16),
-//             ),
-//           );
-//         },
-//       ),
-//     );
-//   }
-//
-//   void _showFilterDialog() {
-//     showDialog(
-//       context: context,
-//       builder: (context) {
-//         return AlertDialog(
-//           title: Text('Filter Tasks'),
-//           content: DropdownButton<String>(
-//             value: _filter,
-//             onChanged: (String? newValue) {
-//               setState(() {
-//                 _filter = newValue!;
-//                 Navigator.of(context).pop();
-//                 _applyFilterAndSort(_tasks);
-//               });
-//             },
-//             items: <String>['All', 'New', 'Active', 'Complete', 'Bug']
-//                 .map<DropdownMenuItem<String>>((String value) {
-//               return DropdownMenuItem<String>(
-//                 value: value,
-//                 child: Text(value),
-//               );
-//             }).toList(),
-//           ),
-//         );
-//       },
-//     );
-//   }
-//
-//   void _showSortDialog() {
-//     showDialog(
-//       context: context,
-//       builder: (context) {
-//         return AlertDialog(
-//           title: Text('Sort Tasks'),
-//           content: DropdownButton<String>(
-//             value: _sortBy,
-//             onChanged: (String? newValue) {
-//               setState(() {
-//                 _sortBy = newValue!;
-//                 Navigator.of(context).pop();
-//                 _applyFilterAndSort(_tasks);
-//               });
-//             },
-//             items: <String>['Due Date', 'Status']
-//                 .map<DropdownMenuItem<String>>((String value) {
-//               return DropdownMenuItem<String>(
-//                 value: value,
-//                 child: Text(value),
-//               );
-//             }).toList(),
-//           ),
-//         );
-//       },
-//     );
-//   }
-// }
-
-
-
-
-
-
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'datamodel.dart';
-import 'firebase_service.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class VolunteerScreen extends StatefulWidget {
-  final String volunteerId;
-
-  VolunteerScreen({required this.volunteerId});
-
+class VolunteerDashboard extends StatefulWidget {
   @override
-  _VolunteerScreenState createState() => _VolunteerScreenState();
+  _VolunteerDashboardState createState() => _VolunteerDashboardState();
 }
 
-class _VolunteerScreenState extends State<VolunteerScreen> {
-  final FirebaseService _firebaseService = FirebaseService();
-  late Stream<DatabaseEvent> _tasksStream;
+class _VolunteerDashboardState extends State<VolunteerDashboard> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
+
   List<Task> _tasks = [];
-  String _filter = 'All'; // Default filter
-  String _sortBy = 'Due Date'; // Default sorting
+  String _selectedFilter = 'All';
+  String _selectedSort = 'Due Date';
 
   @override
   void initState() {
     super.initState();
-    _tasksStream = _firebaseService.getTasksStreamForVolunteer(widget.volunteerId);
-    _startListening();
+    _loadTasks();
   }
 
-  void _startListening() {
-    _tasksStream.listen((event) {
-      final data = event.snapshot.value;
-      print("Data received: $data"); // Debugging line
-      if (data != null) {
-        Map<dynamic, dynamic> taskData = Map<dynamic, dynamic>.from(data as Map);
-        List<Task> loadedTasks = [];
-        taskData.forEach((key, value) {
-          print("Task: $value"); // Debugging line
-          loadedTasks.add(Task.fromJson(Map<String, dynamic>.from(value)));
+  void _loadTasks() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      print("Current user display name: ${user.displayName}"); // Debugging line
+
+      _database
+          .ref()
+          .child('tasks')
+          .orderByChild('assignedTo')
+          .equalTo(user.displayName) // Filter by user display name
+          .onValue
+          .listen((event) {
+        final List<Task> tasks = [];
+        final data = event.snapshot.value as Map?;
+        print("Data received from Firebase: $data"); // Debugging line
+
+        if (data != null) {
+          data.forEach((key, value) {
+            print("Task data: $value"); // Debugging line
+            tasks.add(Task.fromMap(value));
+          });
+        } else {
+          print("No data found for user ${user.displayName}"); // Debugging line
+        }
+
+        setState(() {
+          _tasks = _sortAndFilterTasks(tasks);
+          print("Loaded tasks after sorting and filtering: $_tasks"); // Debugging line
         });
-        _applyFilterAndSort(loadedTasks);
-      } else {
-        print("No data found."); // Debugging line
-      }
-    });
+      });
+    } else {
+      print("No current user found."); // Debugging line
+    }
   }
 
-  void _applyFilterAndSort(List<Task> tasks) {
-    List<Task> filteredTasks;
-    if (_filter == 'All') {
-      filteredTasks = tasks;
-    } else {
-      filteredTasks = tasks.where((task) => task.status == _filter).toList();
-    }
+  List<Task> _sortAndFilterTasks(List<Task> tasks) {
+    List<Task> filteredTasks = tasks.where((task) {
+      if (_selectedFilter == 'All') return true;
+      return task.status == _selectedFilter;
+    }).toList();
 
-    if (_sortBy == 'Due Date') {
+    if (_selectedSort == 'Due Date') {
       filteredTasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
-    } else if (_sortBy == 'Status') {
+    } else if (_selectedSort == 'Status') {
       filteredTasks.sort((a, b) => a.status.compareTo(b.status));
     }
 
-    setState(() {
-      _tasks = filteredTasks;
-    });
+    return filteredTasks;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Tasks'),
+        title: Text('Volunteer Dashboard'),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () {
-              _showFilterDialog();
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.sort),
-            onPressed: () {
-              _showSortDialog();
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await _auth.signOut();
+              Navigator.of(context).pop();
             },
           ),
         ],
       ),
-      body: _tasks.isEmpty
-          ? Center(child: Text('No tasks available.')) // Display message if no tasks
-          : ListView.builder(
-        itemCount: _tasks.length,
-        itemBuilder: (context, index) {
-          final task = _tasks[index];
-          return ListTile(
-            title: Text(task.title),
-            subtitle: Text(
-              '${task.description}\nDue Date: ${task.dueDate}\nStatus: ${task.status}',
-              style: TextStyle(fontSize: 16),
+      body: Column(
+        children: [
+          _buildFilterDropdown(),
+          _buildSortDropdown(),
+          Expanded(
+            child: _tasks.isEmpty
+                ? Center(child: Text("No tasks available"))
+                : ListView.builder(
+              itemCount: _tasks.length,
+              itemBuilder: (context, index) {
+                final task = _tasks[index];
+                return ListTile(
+                  title: Text(task.title),
+                  subtitle: Text(
+                      '${task.description}\nDue Date: ${task.dueDate.toLocal().toShortDateString()}\nStatus: ${task.status}'),
+                  isThreeLine: true,
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Filter Tasks'),
-          content: DropdownButton<String>(
-            value: _filter,
-            onChanged: (String? newValue) {
-              setState(() {
-                _filter = newValue!;
-                Navigator.of(context).pop();
-                _applyFilterAndSort(_tasks);
-              });
-            },
-            items: <String>['All', 'New', 'Active', 'Complete', 'Bug']
-                .map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-          ),
-        );
+  Widget _buildFilterDropdown() {
+    return DropdownButton<String>(
+      value: _selectedFilter,
+      onChanged: (value) {
+        setState(() {
+          _selectedFilter = value ?? 'All';
+          _tasks = _sortAndFilterTasks(_tasks);
+        });
       },
+      items: ['All', 'New', 'Active', 'Bug', 'Completed']
+          .map((status) => DropdownMenuItem(
+        child: Text(status),
+        value: status,
+      ))
+          .toList(),
     );
   }
 
-  void _showSortDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Sort Tasks'),
-          content: DropdownButton<String>(
-            value: _sortBy,
-            onChanged: (String? newValue) {
-              setState(() {
-                _sortBy = newValue!;
-                Navigator.of(context).pop();
-                _applyFilterAndSort(_tasks);
-              });
-            },
-              items: <String>['Due Date', 'Status']
-                  .map<DropdownMenuItem<String>>((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-          ),
-        );
+  Widget _buildSortDropdown() {
+    return DropdownButton<String>(
+      value: _selectedSort,
+      onChanged: (value) {
+        setState(() {
+          _selectedSort = value ?? 'Due Date';
+          _tasks = _sortAndFilterTasks(_tasks);
+        });
       },
+      items: ['Due Date', 'Status']
+          .map((sortOption) => DropdownMenuItem(
+        child: Text(sortOption),
+        value: sortOption,
+      ))
+          .toList(),
     );
+  }
+}
+
+class Task {
+  final String title;
+  final String description;
+  final DateTime dueDate;
+  final String status;
+
+  Task({
+    required this.title,
+    required this.description,
+    required this.dueDate,
+    required this.status,
+  });
+
+  factory Task.fromMap(Map<dynamic, dynamic> map) {
+    return Task(
+      title: map['title'] ?? 'No Title',
+      description: map['description'] ?? 'No Description',
+      dueDate: DateTime.parse(map['dueDate'] ?? DateTime.now().toIso8601String()),
+      status: map['status'] ?? 'No Status',
+    );
+  }
+}
+
+extension DateTimeFormatting on DateTime {
+  String toShortDateString() {
+    return '${this.day}-${this.month}-${this.year}';
   }
 }
