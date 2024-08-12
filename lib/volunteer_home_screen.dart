@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'admin_login_screen.dart';
-import 'admin_signup_screen.dart'; // Import the sign-up screen
 
-class AdminOptionsScreen extends StatelessWidget {
+class VolunteerHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Options'),
+        title: Text('Volunteer'),
       ),
       body: Center(
         child: Column(
@@ -15,16 +13,23 @@ class AdminOptionsScreen extends StatelessWidget {
           children: <Widget>[
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/adminLogin');
+                Navigator.pushNamed(context, '/volunteerLogin');
               },
-              child: Text('Admin Login'),
+              child: Text('Volunteer Login'),
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/adminSignUp');
+                Navigator.pushNamed(context, '/volunteerSignUp');
               },
-              child: Text('Admin Sign Up'),
+              child: Text('Volunteer Sign Up'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/home');
+              },
+              child: Text('Home Screen'),
             ),
           ],
         ),
