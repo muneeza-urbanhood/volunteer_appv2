@@ -8,7 +8,6 @@ import 'admin_home_screen.dart';
 import 'volunteer_login_screen.dart';
 import 'volunteer_home_screen.dart';
 import 'volunteer_signup_screen.dart';
-// import 'volunteer_screen.dart';
 import 'add_task_screen.dart';
 import 'volunteer_dashboard.dart';
 import 'see_volunteer_progress_screen.dart';
@@ -16,7 +15,7 @@ import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(MyApp());
 }
 
@@ -24,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My App',
+      title: 'Urban Food Alliance',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -42,7 +41,6 @@ class MyApp extends StatelessWidget {
         '/volunteerSignUp': (context) => VolunteerSignUpScreen(),
         '/volunteerHome': (context) => VolunteerHomeScreen(),
         '/volunteerDashboard': (context) => VolunteerDashboard(),
-        // '/volunteerscreen': (context) => VolunteerScreen(volunteerId: '')
       },
     );
   }

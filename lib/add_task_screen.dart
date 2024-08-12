@@ -11,9 +11,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _dueDateController = TextEditingController();
 
-  String? _selectedVolunteerName;
+  String? _selectedVolunteerUID;
   String? _status = 'New';
-  List<String> _volunteers = [];
+  List<Map<String, String>> _volunteers = [];
 
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
@@ -28,14 +28,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     try {
       DataSnapshot snapshot = await _database.child('volunteers').get();
       if (snapshot.exists) {
-        final List<String> volunteerList = [];
+        final List<Map<String, String>> volunteerList = [];
         Map<dynamic, dynamic>? volunteersData = snapshot.value as Map<dynamic, dynamic>?;
         if (volunteersData != null) {
           volunteersData.forEach((key, value) {
             if (value is Map) {
               final String name = value['name'] as String? ?? '';
               if (name.isNotEmpty) {
-                volunteerList.add(name);
+                volunteerList.add({'uid': key, 'name': name});
               }
             }
           });
@@ -70,7 +70,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final taskData = {
       'title': _titleController.text,
       'description': _descriptionController.text,
-      'assignedVolunteer': _selectedVolunteerName,
+      'assignedVolunteer': _selectedVolunteerUID,
       'dueDate': _dueDateController.text,
       'status': _status,
     };
@@ -99,68 +99,70 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       appBar: AppBar(
         title: Text('Add Task'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(labelText: 'Title'),
-            ),
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(labelText: 'Description'),
-            ),
-            // Dropdown for selecting assigned volunteer
-            DropdownButtonFormField<String>(
-              value: _selectedVolunteerName,
-              decoration: InputDecoration(labelText: 'Assigned Volunteer'),
-              items: _volunteers.isNotEmpty
-                  ? _volunteers.map((volunteer) {
-                return DropdownMenuItem<String>(
-                  value: volunteer,
-                  child: Text(volunteer),
-                );
-              }).toList()
-                  : [DropdownMenuItem<String>(value: null, child: Text('No volunteers available'))],
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedVolunteerName = newValue;
-                });
-              },
-            ),
-            TextField(
-              controller: _dueDateController,
-              decoration: InputDecoration(
-                labelText: 'Due Date',
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.calendar_today),
-                  onPressed: () => _selectDueDate(context),
-                ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: <Widget>[
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(labelText: 'Title'),
               ),
-              readOnly: true, // Make text field read-only
-            ),
-            DropdownButtonFormField<String>(
-              value: _status,
-              decoration: InputDecoration(labelText: 'Status'),
-              items: <String>['New', 'Active', 'Complete', 'Bug'].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _status = newValue!;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveTask,
-              child: Text('Save Task'),
-            ),
-          ],
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
+              ),
+              // Dropdown for selecting assigned volunteer
+              DropdownButtonFormField<String>(
+                value: _selectedVolunteerUID,
+                decoration: InputDecoration(labelText: 'Assigned Volunteer'),
+                items: _volunteers.isNotEmpty
+                    ? _volunteers.map((volunteer) {
+                  return DropdownMenuItem<String>(
+                    value: volunteer['uid'],
+                    child: Text(volunteer['name'] ?? 'Unknown'),
+                  );
+                }).toList()
+                    : [DropdownMenuItem<String>(value: null, child: Text('No volunteers available'))],
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedVolunteerUID = newValue;
+                  });
+                },
+              ),
+              TextField(
+                controller: _dueDateController,
+                decoration: InputDecoration(
+                  labelText: 'Due Date',
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.calendar_today),
+                    onPressed: () => _selectDueDate(context),
+                  ),
+                ),
+                readOnly: true, // Make text field read-only
+              ),
+              DropdownButtonFormField<String>(
+                value: _status,
+                decoration: InputDecoration(labelText: 'Status'),
+                items: <String>['New', 'Active', 'Complete', 'Bug'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _status = newValue!;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saveTask,
+                child: Text('Save Task'),
+              ),
+            ],
+          ),
         ),
       ),
     );

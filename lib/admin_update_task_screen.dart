@@ -11,13 +11,13 @@ class _UpdateTaskScreenState extends State<UpdateTaskScreen> {
   List<Map<String, dynamic>> _tasks = [];
   Map<String, dynamic>? _selectedTask;
   String? _selectedTaskKey;
-  String? _selectedVolunteerName;
+  String? _selectedVolunteerId;
   String? _status;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _dueDateController = TextEditingController();
 
-  List<String> _volunteers = [];
+  List<Map<String, String>> _volunteers = [];
   List<Map<String, dynamic>> _filteredTasks = [];
 
   @override
@@ -31,14 +31,14 @@ class _UpdateTaskScreenState extends State<UpdateTaskScreen> {
     try {
       DataSnapshot snapshot = await _database.child('volunteers').get();
       if (snapshot.exists) {
-        final List<String> volunteerList = [];
+        final List<Map<String, String>> volunteerList = [];
         Map<dynamic, dynamic>? volunteersData = snapshot.value as Map<dynamic, dynamic>?;
         if (volunteersData != null) {
           volunteersData.forEach((key, value) {
             if (value is Map) {
               final String name = value['name'] as String? ?? '';
               if (name.isNotEmpty) {
-                volunteerList.add(name);
+                volunteerList.add({'id': key, 'name': name});
               }
             }
           });
@@ -77,8 +77,8 @@ class _UpdateTaskScreenState extends State<UpdateTaskScreen> {
 
   void _filterTasksByVolunteer() {
     setState(() {
-      _filteredTasks = _selectedVolunteerName != null
-          ? _tasks.where((task) => task['assignedVolunteer'] == _selectedVolunteerName).toList()
+      _filteredTasks = _selectedVolunteerId != null
+          ? _tasks.where((task) => task['assignedVolunteer'] == _selectedVolunteerId).toList()
           : [];
     });
   }
@@ -114,7 +114,7 @@ class _UpdateTaskScreenState extends State<UpdateTaskScreen> {
     final updatedTaskData = {
       'title': _titleController.text,
       'description': _descriptionController.text,
-      'assignedVolunteer': _selectedVolunteerName,
+      'assignedVolunteer': _selectedVolunteerId,
       'dueDate': _dueDateController.text,
       'status': _status,
     };
@@ -139,87 +139,89 @@ class _UpdateTaskScreenState extends State<UpdateTaskScreen> {
       appBar: AppBar(
         title: Text('Update Task'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: <Widget>[
-            DropdownButtonFormField<String>(
-              value: _selectedVolunteerName,
-              decoration: InputDecoration(labelText: 'Assigned Volunteer'),
-              items: _volunteers.map((volunteer) {
-                return DropdownMenuItem<String>(
-                  value: volunteer,
-                  child: Text(volunteer),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedVolunteerName = newValue;
-                  _filterTasksByVolunteer();
-                  _selectedTask = null; // Clear selected task when volunteer changes
-                  _selectedTaskKey = null;
-                  _titleController.clear();
-                  _descriptionController.clear();
-                  _dueDateController.clear();
-                  _status = null;
-                });
-              },
-            ),
-            DropdownButtonFormField<Map<String, dynamic>>(
-              value: _selectedTask,
-              decoration: InputDecoration(labelText: 'Select Task'),
-              items: _filteredTasks.map((task) {
-                return DropdownMenuItem<Map<String, dynamic>>(
-                  value: task,
-                  child: Text(task['title'] ?? 'No Title'),
-                );
-              }).toList(),
-              onChanged: (Map<String, dynamic>? selectedTask) {
-                if (selectedTask != null) {
-                  _onTaskSelected(selectedTask);
-                }
-              },
-            ),
-            TextField(
-              controller: _titleController,
-              decoration: InputDecoration(labelText: 'Title'),
-            ),
-            TextField(
-              controller: _descriptionController,
-              decoration: InputDecoration(labelText: 'Description'),
-            ),
-            TextField(
-              controller: _dueDateController,
-              decoration: InputDecoration(
-                labelText: 'Due Date',
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.calendar_today),
-                  onPressed: () => _selectDueDate(context),
-                ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: <Widget>[
+              DropdownButtonFormField<String>(
+                value: _selectedVolunteerId,
+                decoration: InputDecoration(labelText: 'Assigned Volunteer'),
+                items: _volunteers.map((volunteer) {
+                  return DropdownMenuItem<String>(
+                    value: volunteer['id'],
+                    child: Text(volunteer['name']!),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedVolunteerId = newValue;
+                    _filterTasksByVolunteer();
+                    _selectedTask = null; // Clear selected task when volunteer changes
+                    _selectedTaskKey = null;
+                    _titleController.clear();
+                    _descriptionController.clear();
+                    _dueDateController.clear();
+                    _status = null;
+                  });
+                },
               ),
-              readOnly: true, // Make text field read-only
-            ),
-            DropdownButtonFormField<String>(
-              value: _status,
-              decoration: InputDecoration(labelText: 'Status'),
-              items: <String>['New', 'Active', 'Complete', 'Bug'].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _status = newValue!;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _updateTask,
-              child: Text('Update Task'),
-            ),
-          ],
+              DropdownButtonFormField<Map<String, dynamic>>(
+                value: _selectedTask,
+                decoration: InputDecoration(labelText: 'Select Task'),
+                items: _filteredTasks.map((task) {
+                  return DropdownMenuItem<Map<String, dynamic>>(
+                    value: task,
+                    child: Text(task['title'] ?? 'No Title'),
+                  );
+                }).toList(),
+                onChanged: (Map<String, dynamic>? selectedTask) {
+                  if (selectedTask != null) {
+                    _onTaskSelected(selectedTask);
+                  }
+                },
+              ),
+              TextField(
+                controller: _titleController,
+                decoration: InputDecoration(labelText: 'Title'),
+              ),
+              TextField(
+                controller: _descriptionController,
+                decoration: InputDecoration(labelText: 'Description'),
+              ),
+              TextField(
+                controller: _dueDateController,
+                decoration: InputDecoration(
+                  labelText: 'Due Date',
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.calendar_today),
+                    onPressed: () => _selectDueDate(context),
+                  ),
+                ),
+                readOnly: true, // Make text field read-only
+              ),
+              DropdownButtonFormField<String>(
+                value: _status,
+                decoration: InputDecoration(labelText: 'Status'),
+                items: <String>['New', 'Active', 'Complete', 'Bug'].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _status = newValue!;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _updateTask,
+                child: Text('Update Task'),
+              ),
+            ],
+          ),
         ),
       ),
     );

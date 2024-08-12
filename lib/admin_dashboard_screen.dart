@@ -38,11 +38,11 @@ class AdminDashboardScreen extends StatelessWidget {
                 },
                 child: Text('View Volunteer Progress'),
               ),
-              SizedBox(height: 16),
+              Spacer(),
               ElevatedButton(
                 onPressed: () async {
                   await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacementNamed(context, '/adminHome');
+                  Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
                 },
                 child: Text('Log Out'),
               ),

@@ -1,22 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-class Task {
-  final String id;
-  final String title;
-  final String description;
-  final DateTime dueDate;
-  String status;
-
-  Task({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.dueDate,
-    required this.status,
-  });
-}
+import 'volunteer_home_screen.dart'; // Import the VolunteerHomeScreen
 
 class VolunteerDashboard extends StatefulWidget {
   @override
@@ -24,90 +9,139 @@ class VolunteerDashboard extends StatefulWidget {
 }
 
 class _VolunteerDashboardState extends State<VolunteerDashboard> {
-  late DatabaseReference _tasksRef;
-  late String _currentUserUid;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  List<Map<String, String>> _volunteers = [];
+  Map<String, String> _volunteerNames = {};
   List<Task> _tasks = [];
   List<Task> _filteredTasks = [];
-  String _selectedStatus = 'Status';
-  String _selectedSortByDueDate = 'Due Date';
-  DateTime? _startDate;
-  DateTime? _endDate;
+  String _selectedFilter = 'All';
+  String _selectedSort = 'Due Date';
 
   @override
   void initState() {
     super.initState();
-    _tasksRef = FirebaseDatabase.instance.ref('tasks');
-    _currentUserUid = FirebaseAuth.instance.currentUser!.uid;
-    _fetchTasks();
+    _fetchVolunteers();
+    _loadTasks(); // Load tasks when the screen initializes
   }
 
-  Future<void> _fetchTasks() async {
-    final snapshot = await _tasksRef.get();
-    final tasksList = <Task>[];
-    snapshot.children.forEach((child) {
-      final taskData = child.value as Map<dynamic, dynamic>;
-      final dueDate = _parseDate(taskData['dueDate'] as String);
-      final task = Task(
-        id: child.key!,
-        title: taskData['title'] as String,
-        description: taskData['description'] as String,
-        dueDate: dueDate,
-        status: taskData['status'] as String,
-      );
-      if (taskData['assignedVolunteer'] == _currentUserUid) {
-        tasksList.add(task);
-      }
-    });
-    setState(() {
-      _tasks = tasksList;
-      _applyFilters();
-    });
-  }
-
-  DateTime _parseDate(String dateString) {
+  Future<void> _fetchVolunteers() async {
     try {
-      return DateTime.parse(dateString);
+      DataSnapshot snapshot = await _database.child('volunteers').get();
+      if (snapshot.exists) {
+        final List<Map<String, String>> volunteerList = [];
+        Map<dynamic, dynamic>? volunteersData = snapshot.value as Map<dynamic, dynamic>?;
+        if (volunteersData != null) {
+          volunteersData.forEach((key, value) {
+            if (value is Map) {
+              final String name = value['name'] as String? ?? '';
+              if (name.isNotEmpty) {
+                volunteerList.add({'id': key, 'name': name});
+                _volunteerNames[key] = name;
+              }
+            }
+          });
+        }
+        setState(() {
+          _volunteers = volunteerList;
+        });
+      }
     } catch (e) {
-      return DateTime.now();
+      print('Failed to fetch volunteers: $e');
     }
   }
 
-  void _applyFilters() {
-    List<Task> filteredTasks = _tasks;
+  void _loadTasks() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final String? uid = user.uid;
+      print("Current user UID: $uid");
 
-    if (_selectedStatus != 'All') {
-      filteredTasks = filteredTasks.where((task) => task.status == _selectedStatus).toList();
+      _database.child('tasks').onValue.listen((event) {
+        final List<Task> tasks = [];
+        final data = event.snapshot.value as Map?;
+        print("Data received from Firebase: $data");
+
+        if (data != null) {
+          data.forEach((key, value) {
+            if (value is Map && value['assignedVolunteer'] == uid) {
+              tasks.add(Task.fromMap(value, key, _volunteerNames[uid] ?? 'Unknown'));
+            }
+          });
+        } else {
+          print("No tasks found for user $uid");
+        }
+
+        setState(() {
+          _tasks = tasks;
+          _filteredTasks = _sortAndFilterTasks(tasks); // Apply sorting and filtering
+          print("Loaded tasks after sorting and filtering: ${_filteredTasks.length} tasks");
+        });
+      });
+    } else {
+      print("No current user found.");
     }
-
-    if (_startDate != null && _endDate != null) {
-      filteredTasks = _filterByDateRange(filteredTasks, _startDate!, _endDate!);
-    }
-
-    // Sort tasks by Due Date
-    if (_selectedSortByDueDate == 'Ascending') {
-      filteredTasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
-    } else if (_selectedSortByDueDate == 'Descending') {
-      filteredTasks.sort((a, b) => b.dueDate.compareTo(a.dueDate));
-    }
-
-    setState(() {
-      _filteredTasks = filteredTasks;
-    });
   }
 
-  List<Task> _filterByDateRange(List<Task> tasks, DateTime startDate, DateTime endDate) {
-    return tasks.where((task) {
-      return task.dueDate.isAfter(startDate) && task.dueDate.isBefore(endDate);
+  List<Task> _sortAndFilterTasks(List<Task> tasks) {
+    // Filter tasks based on the selected status
+    List<Task> filteredTasks = tasks.where((task) {
+      String taskStatus = task.status.trim().toLowerCase();
+      String filterStatus = _selectedFilter.trim().toLowerCase();
+      bool isMatch = filterStatus == 'all' || taskStatus == filterStatus;
+      print("Filtering task: ${task.title}, Status: ${task.status}, isMatch: $isMatch");
+      return isMatch;
     }).toList();
+
+    print("Filtered tasks: ${filteredTasks.length}");
+
+    // Sort the filtered tasks based on the selected sort option
+    if (_selectedSort == 'Due Date') {
+      filteredTasks.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    } else if (_selectedSort == 'Status') {
+      filteredTasks.sort((a, b) {
+        const statusOrder = ['new', 'active', 'bug', 'complete'];
+        return statusOrder.indexOf(a.status.toLowerCase()).compareTo(
+            statusOrder.indexOf(b.status.toLowerCase()));
+      });
+    }
+
+    return filteredTasks;
   }
 
-  Future<void> _updateTaskStatus(String taskId, String newStatus) async {
-    await _tasksRef.child(taskId).update({'status': newStatus});
-    setState(() {
-      final task = _tasks.firstWhere((task) => task.id == taskId);
-      task.status = newStatus;
-      _applyFilters();
-    });
+  void _updateTaskStatus(Task task, String newStatus) async {
+    try {
+      // Update the status in the Firebase database
+      await _database.child('tasks').child(task.key).update({'status': newStatus});
+
+      // Update the local state
+      setState(() {
+        task.status = newStatus;
+        _filteredTasks = _sortAndFilterTasks(_tasks); // Reapply filter after status update
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Task status updated successfully!')),
+      );
+    } catch (e) {
+      print('Failed to update task status: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update task status: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await _auth.signOut();
+      print('User signed out successfully'); // Debugging line
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false); // Redirect to home screen
+    } catch (e) {
+      print('Failed to sign out: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to sign out: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -118,77 +152,34 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
       ),
       body: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButton<String>(
-                  value: _selectedStatus,
-                  items: ['Status', 'All', 'Active', 'Bug', 'Complete']
-                      .map((status) => DropdownMenuItem<String>(
-                    value: status,
-                    child: Text(status),
-                  ))
-                      .toList(),
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedStatus = newValue!;
-                      _applyFilters();
-                    });
-                  },
-                ),
-              ),
-              Expanded(
-                child: DropdownButton<String>(
-                  value: _selectedSortByDueDate,
-                  items: ['Due Date', 'Ascending', 'Descending']
-                      .map((sortOption) => DropdownMenuItem<String>(
-                    value: sortOption,
-                    child: Text(sortOption),
-                  ))
-                      .toList(),
-                  onChanged: (newValue) {
-                    setState(() {
-                      _selectedSortByDueDate = newValue!;
-                      _applyFilters();
-                    });
-                  },
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.date_range),
-                onPressed: () => _selectDateRange(context),
-              ),
-            ],
-          ),
+          _buildFilterDropdown(),
+          _buildSortDropdown(),
           Expanded(
-            child: ListView.builder(
+            child: _filteredTasks.isEmpty
+                ? Center(child: Text("No tasks available"))
+                : ListView.builder(
               itemCount: _filteredTasks.length,
               itemBuilder: (context, index) {
                 final task = _filteredTasks[index];
                 return ListTile(
                   title: Text(task.title),
                   subtitle: Text(
-                    '${task.description}\nDue: ${task.dueDate.toLocal()}\nStatus: ${task.status}',
-                    style: TextStyle(fontSize: 14),
+                    '${task.description}\nDue Date: ${task.dueDate.toLocal().toShortDateString()}\nStatus: ${task.status}',
                   ),
-                  trailing: DropdownButton<String>(
-                    value: task.status,
-                    items: ['New', 'Active', 'Bug', 'Complete']
-                        .map((status) => DropdownMenuItem<String>(
-                      value: status,
-                      child: Text(status),
-                    ))
-                        .toList(),
-                    onChanged: (newStatus) {
-                      if (newStatus != null && newStatus != 'Update Status') {
-                        _updateTaskStatus(task.id, newStatus);
-                      }
-                    },
-                    icon: Icon(Icons.arrow_downward),
-                    underline: SizedBox(),
+                  isThreeLine: true,
+                  trailing: ElevatedButton(
+                    onPressed: () => _showUpdateStatusDialog(task),
+                    child: Text('Update Status'),
                   ),
                 );
               },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton(
+              onPressed: _signOut,
+              child: Text('Sign Out'),
             ),
           ),
         ],
@@ -196,29 +187,121 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
     );
   }
 
-  Future<void> _selectDateRange(BuildContext context) async {
-    final DateTime? pickedStartDate = await showDatePicker(
+  void _showUpdateStatusDialog(Task task) {
+    showDialog(
       context: context,
-      initialDate: _startDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      builder: (context) {
+        String? _newStatus = task.status;
+        return AlertDialog(
+          title: Text('Update Task Status'),
+          content: DropdownButtonFormField<String>(
+            value: _newStatus,
+            decoration: InputDecoration(labelText: 'Status'),
+            items: <String>['New', 'Active', 'Complete', 'Bug'].map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+            onChanged: (String? newValue) {
+              setState(() {
+                _newStatus = newValue;
+              });
+            },
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Update'),
+              onPressed: () {
+                if (_newStatus != null && _newStatus != task.status) {
+                  _updateTaskStatus(task, _newStatus!);
+                }
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
+  }
 
-    if (pickedStartDate != null) {
-      final DateTime? pickedEndDate = await showDatePicker(
-        context: context,
-        initialDate: _endDate ?? DateTime.now(),
-        firstDate: pickedStartDate,
-        lastDate: DateTime(2100),
-      );
-
-      if (pickedEndDate != null) {
+  Widget _buildFilterDropdown() {
+    return DropdownButton<String>(
+      value: _selectedFilter,
+      onChanged: (value) {
         setState(() {
-          _startDate = pickedStartDate;
-          _endDate = pickedEndDate;
-          _applyFilters();
+          _selectedFilter = value ?? 'All';
+          _filteredTasks = _sortAndFilterTasks(_tasks);
         });
-      }
-    }
+      },
+      items: ['All', 'New', 'Active', 'Bug', 'Complete']
+          .map((status) => DropdownMenuItem(
+        child: Text(status),
+        value: status,
+      ))
+          .toList(),
+    );
+  }
+
+  Widget _buildSortDropdown() {
+    return DropdownButton<String>(
+      value: _selectedSort,
+      onChanged: (value) {
+        setState(() {
+          _selectedSort = value ?? 'Due Date';
+          _filteredTasks = _sortAndFilterTasks(_tasks);
+        });
+      },
+      items: ['Due Date', 'Status']
+          .map((sortOption) => DropdownMenuItem(
+        child: Text(sortOption),
+        value: sortOption,
+      ))
+          .toList(),
+    );
+  }
+}
+
+class Task {
+  final String key; // Unique key for each task
+  final String title;
+  final String description;
+  final DateTime dueDate;
+  String status; // Mutable to update the status
+  final String assignedVolunteerId; // Volunteer ID to whom the task is assigned
+  final String assignedVolunteerName; // Volunteer name to whom the task is assigned
+
+  Task({
+    required this.key,
+    required this.title,
+    required this.description,
+    required this.dueDate,
+    required this.status,
+    required this.assignedVolunteerId,
+    required this.assignedVolunteerName,
+  });
+
+  factory Task.fromMap(Map<dynamic, dynamic> map, String key, String assignedVolunteerName) {
+    return Task(
+      key: key,
+      title: map['title'] ?? 'No Title',
+      description: map['description'] ?? 'No Description',
+      dueDate: DateTime.parse(map['dueDate'] ?? DateTime.now().toIso8601String()),
+      status: map['status'] ?? 'No Status',
+      assignedVolunteerId: map['assignedVolunteer'] ?? '',
+      assignedVolunteerName: assignedVolunteerName,
+    );
+  }
+}
+
+extension DateTimeFormatting on DateTime {
+  String toShortDateString() {
+    return '${this.day}-${this.month}-${this.year}';
   }
 }
