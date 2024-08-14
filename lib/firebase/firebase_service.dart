@@ -1,5 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
-import 'datamodel.dart';
+import '../models/datamodel.dart';
 
 class FirebaseService {
   final DatabaseReference _tasksRef = FirebaseDatabase.instance.ref().child(

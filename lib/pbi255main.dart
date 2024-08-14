@@ -1,17 +1,17 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'admin_update_task_screen.dart';
-import 'admin_dashboard_screen.dart';
-import 'admin_login_screen.dart';
-import 'admin_signup_screen.dart';
-import 'admin_home_screen.dart';
-import 'volunteer_login_screen.dart';
-import 'volunteer_home_screen.dart';
-import 'volunteer_signup_screen.dart';
-import 'add_task_screen.dart';
-import 'volunteer_dashboard.dart';
-import 'see_volunteer_progress_screen.dart';
-import 'firebase_options.dart';
+import 'admin/admin_update_task_screen.dart';
+import 'admin/admin_dashboard_screen.dart';
+import 'admin/admin_login_screen.dart';
+import 'admin/admin_signup_screen.dart';
+import 'admin/admin_home_screen.dart';
+import 'volunteer/volunteer_login_screen.dart';
+import 'volunteer/volunteer_home_screen.dart';
+import 'volunteer/volunteer_signup_screen.dart';
+import 'task/add_task_screen.dart';
+import 'volunteer/volunteer_dashboard.dart';
+import 'task/see_volunteer_progress_screen.dart';
+import 'firebase/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -156,8 +156,8 @@
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-import 'datamodel.dart';
-import 'firebase_service.dart';
+import '../models/datamodel.dart';
+import '../firebase/firebase_service.dart';
 
 class VolunteerScreen extends StatefulWidget {
   final String volunteerId;

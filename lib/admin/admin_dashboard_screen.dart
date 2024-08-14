@@ -1,8 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'add_task_screen.dart';
-import 'admin_update_task_screen.dart';
-import 'see_volunteer_progress_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   @override
