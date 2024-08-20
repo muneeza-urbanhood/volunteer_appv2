@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:volunteer_app/task/gmail_login_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   @override
@@ -13,7 +13,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
-  final GmailLoginService _loginService = GmailLoginService();
 
   void _signIn() async {
     try {
@@ -32,8 +31,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         // Navigate to the admin dashboard
         Navigator.pushReplacementNamed(
           context,
-          '/adminDashboard', // Change this route to your admin dashboard
-          arguments: user.uid, // Pass user ID to AdminScreen if needed
+          '/adminDashboard',
+          arguments: user.uid,
         );
       } else {
         // If user is not an admin, sign out and show error
@@ -51,14 +50,36 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   void _signInWithGoogle() async {
-    final user = await _loginService.loginWithGoogle(role: 'admin');
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In Canceled')));
+        return;
+      }
 
-    if (user != null) {
-      Navigator.pushReplacementNamed(context, '/adminDashboard');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('This account is not registered as an admin.')),
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        final snapshot = await _database.child('admins/${user.uid}').get();
+        if (snapshot.exists) {
+          Navigator.pushReplacementNamed(context, '/adminDashboard');
+        } else {
+          await _auth.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('This account is not registered as an admin.')),
+          );
+        }
+      }
+    } catch (e) {
+      print("Error during Google login: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In Failed: $e')));
     }
   }
 

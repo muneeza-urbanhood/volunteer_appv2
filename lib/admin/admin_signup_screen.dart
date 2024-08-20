@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-
-import '../task/gmail_signup_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AdminSignUpScreen extends StatefulWidget {
   @override
@@ -15,7 +14,6 @@ class _AdminSignUpScreenState extends State<AdminSignUpScreen> {
   final _nameController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
-  final _signUpService = GmailSignUpService();
   bool _isSignedUp = false;
 
   void _signUp() async {
@@ -46,15 +44,41 @@ class _AdminSignUpScreenState extends State<AdminSignUpScreen> {
   }
 
   void _signUpWithGoogle() async {
-    final name = _nameController.text;
-    final user = await _signUpService.signUpWithGoogle(role: 'admins', name: name);
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-Up Canceled')));
+        return;
+      }
 
-    if (user != null) {
-      setState(() {
-        _isSignedUp = true;
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-Up Failed')));
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        final dbRef = _database.child('admins/${user.uid}');
+        final snapshot = await dbRef.get();
+
+        if (!snapshot.exists) {
+          await dbRef.set({
+            'email': user.email,
+            'name': _nameController.text.isNotEmpty ? _nameController.text : user.displayName,
+          });
+          setState(() {
+            _isSignedUp = true;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User already exists as an admin')));
+        }
+      }
+    } catch (e) {
+      print("Error during Google sign up: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-Up Failed: $e')));
     }
   }
 

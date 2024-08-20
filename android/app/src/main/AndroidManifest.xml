@@ -33,6 +33,15 @@
             </intent-filter>
         </activity>
 
+        <!-- Required Meta-data for Google Services -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="YOUR_GOOGLE_MAPS_API_KEY" /> <!-- Replace this with your actual Google Maps API Key if using Maps -->
+
         <!-- Meta-data required by Flutter -->
         <meta-data
             android:name="flutterEmbedding"

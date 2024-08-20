@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-
-import '../task/gmail_login_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class VolunteerLoginScreen extends StatefulWidget {
   @override
@@ -14,7 +13,6 @@ class _VolunteerLoginScreenState extends State<VolunteerLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
-  final GmailLoginService _loginService = GmailLoginService();
 
   void _signIn() async {
     try {
@@ -33,8 +31,8 @@ class _VolunteerLoginScreenState extends State<VolunteerLoginScreen> {
         // Navigate to the volunteer dashboard
         Navigator.pushReplacementNamed(
           context,
-          '/volunteerDashboard', // Change this route to your volunteer dashboard
-          arguments: user.uid, // Pass user ID to VolunteerScreen if needed
+          '/volunteerDashboard',
+          arguments: user.uid,
         );
       } else {
         // If user is not a volunteer, sign out and show error
@@ -52,14 +50,36 @@ class _VolunteerLoginScreenState extends State<VolunteerLoginScreen> {
   }
 
   void _signInWithGoogle() async {
-    final user = await _loginService.loginWithGoogle(role: 'volunteer');
+    try {
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In Canceled')));
+        return;
+      }
 
-    if (user != null) {
-      Navigator.pushReplacementNamed(context, '/volunteerDashboard');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('This account is not registered as a volunteer.')),
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        final snapshot = await _database.child('volunteers/${user.uid}').get();
+        if (snapshot.exists) {
+          Navigator.pushReplacementNamed(context, '/volunteerDashboard');
+        } else {
+          await _auth.signOut();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('This account is not registered as a volunteer.')),
+          );
+        }
+      }
+    } catch (e) {
+      print("Error during Google login: $e");
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In Failed: $e')));
     }
   }
 
