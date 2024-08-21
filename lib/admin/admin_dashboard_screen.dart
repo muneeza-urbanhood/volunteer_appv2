@@ -1,7 +1,23 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  Future<void> _signOut(BuildContext context) async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      await _googleSignIn.signOut(); // Sign out from Google as well
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+    } catch (e) {
+      print('Failed to sign out: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to sign out: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,8 +54,7 @@ class AdminDashboardScreen extends StatelessWidget {
               Spacer(),
               ElevatedButton(
                 onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                  await _signOut(context);
                 },
                 child: Text('Log Out'),
               ),

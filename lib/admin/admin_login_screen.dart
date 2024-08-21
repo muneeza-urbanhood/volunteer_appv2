@@ -13,9 +13,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   void _signIn() async {
     try {
+      // Sign out of any existing Google accounts
+      await _googleSignIn.signOut();
+
       // Sign in using Firebase Authentication
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text,
@@ -51,7 +55,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   void _signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      // Sign out of any existing Google accounts
+      await _googleSignIn.signOut();
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-In Canceled')));
         return;

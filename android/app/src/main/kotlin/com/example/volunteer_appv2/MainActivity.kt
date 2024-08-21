@@ -1,4 +1,4 @@
-package com.example.volunteer_appv2
+package com.example.volunteer_app
 
 import io.flutter.embedding.android.FlutterActivity
 

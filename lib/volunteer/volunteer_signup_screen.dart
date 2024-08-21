@@ -14,14 +14,18 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
   final _nameController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   bool _isSignedUp = false;
 
   void _signUp() async {
-    final email = _emailController.text;
-    final password = _passwordController.text;
-    final name = _nameController.text;
-
     try {
+      // Sign out of any existing Google accounts
+      await _googleSignIn.signOut();
+
+      final email = _emailController.text;
+      final password = _passwordController.text;
+      final name = _nameController.text;
+
       // Create a new user in Firebase Authentication
       final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -45,7 +49,10 @@ class _VolunteerSignUpScreenState extends State<VolunteerSignUpScreen> {
 
   void _signUpWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      // Sign out of any existing Google accounts
+      await _googleSignIn.signOut();
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Google Sign-Up Canceled')));
         return;

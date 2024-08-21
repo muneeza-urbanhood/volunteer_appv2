@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Import the VolunteerHomeScreen
+import 'package:google_sign_in/google_sign_in.dart';
 
 class VolunteerDashboard extends StatefulWidget {
   @override
@@ -11,6 +11,7 @@ class VolunteerDashboard extends StatefulWidget {
 class _VolunteerDashboardState extends State<VolunteerDashboard> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   List<Map<String, String>> _volunteers = [];
   Map<String, String> _volunteerNames = {};
   List<Task> _tasks = [];
@@ -134,7 +135,8 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
   Future<void> _signOut() async {
     try {
       await _auth.signOut();
-      print('User signed out successfully'); // Debugging line
+      await _googleSignIn.signOut(); // Sign out from Google as well
+      print('User signed out successfully');
       Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false); // Redirect to home screen
     } catch (e) {
       print('Failed to sign out: $e');
