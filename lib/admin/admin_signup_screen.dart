@@ -58,6 +58,8 @@ class _AdminSignUpScreenState extends State<AdminSignUpScreen> {
         return;
       }
 
+      //comment
+
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
